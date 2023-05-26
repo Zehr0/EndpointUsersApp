@@ -1,5 +1,6 @@
 package com.hilary.endpointusersapp;
 
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,25 +11,29 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
 
-public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder> {
+public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserHolder> {
 
-    private List<User> userList;
+    private Context context;
+    private  List<User> userList;
 
-    public UserAdapter(List<User> userList) {
-        this.userList = userList;
+    public UserAdapter(Context context, List<User> users){
+        this.context = context;
+        this.userList = users;
     }
 
     @NonNull
     @Override
-    public UserViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_user, parent, false);
-        return new UserViewHolder(view);
+    public UserHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(context).inflate(R.layout.item_user, parent, false);
+        return new UserHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull UserViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull UserHolder holder, int position) {
         User user = userList.get(position);
-        holder.bind(user);
+        holder.firstName.setText(user.getFName());
+        holder.lastName.setText(user.getLName());
+        holder.email.setText(user.getEmail());
     }
 
     @Override
@@ -36,23 +41,14 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         return userList.size();
     }
 
-    static class UserViewHolder extends RecyclerView.ViewHolder {
-
-        private TextView fnameTextView;
-        private TextView lnameTextView;
-        private TextView emailTextView;
-
-        public UserViewHolder(@NonNull View itemView) {
+    public  class  UserHolder extends RecyclerView.ViewHolder {
+        TextView firstName, lastName, email;
+        public  UserHolder(@NonNull View itemView){
             super(itemView);
-            fnameTextView = itemView.findViewById(R.id.fNameTextView);
-            lnameTextView = itemView.findViewById(R.id.lNameTextView);
-            emailTextView = itemView.findViewById(R.id.emailTextView);
-        }
 
-        public void bind(User user) {
-            fnameTextView.setText(user.getFName());
-            lnameTextView.setText(user.getLName());
-            emailTextView.setText(user.getEmail());
+            firstName = itemView.findViewById(R.id.fNameTextView);
+            lastName = itemView.findViewById(R.id.lNameTextView);
+            email = itemView.findViewById(R.id.emailTextView);
         }
     }
 }

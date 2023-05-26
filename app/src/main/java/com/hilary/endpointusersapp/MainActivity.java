@@ -1,40 +1,34 @@
 package com.hilary.endpointusersapp;
 
-import android.os.AsyncTask;
 import android.os.Bundle;
 
-import com.google.android.material.snackbar.Snackbar;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonArrayRequest;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.view.View;
-
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
-import androidx.navigation.ui.AppBarConfiguration;
-import androidx.navigation.ui.NavigationUI;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.gson.Gson;
-import com.hilary.endpointusersapp.databinding.ActivityMainBinding;
+import android.widget.Toast;
 
-import android.view.Menu;
-import android.view.MenuItem;
-import android.widget.TextView;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     private RecyclerView userRecyclerView;
+    private RequestQueue requestQueue;
     private UserAdapter userAdapter;
+
+    private List<User> userList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,53 +36,47 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         userRecyclerView = findViewById(R.id.userRecyclerView);
+        userRecyclerView.setHasFixedSize(true);
         userRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        // Fetch user data
-        new FetchUserDataTask().execute();
+        requestQueue = VolleySingleton.getmInstance(this).getRequestQueue();
+        userList = new ArrayList<>();
+
+        fetchUsers();
+
     }
 
-    private class FetchUserDataTask extends AsyncTask<Void, Void, String> {
+    private void fetchUsers() {
+        String url = "https://api.slingacademy.com/v1/sample-data/users";
 
-        @Override
-        protected String doInBackground(Void... voids) {
-            try {
-                // Make a GET request to the API endpoint
-                URL url = new URL("https://api.slingacademy.com/v1/sample-data/users");
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("GET");
+        JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(Request.Method.GET, url, null, new Response.Listener<JSONArray>() {
+            @Override
+            public void onResponse(JSONArray response) {
+                for (int i = 0; i < response.length(); i++) {
+                    try {
+                        JSONObject jsonObject = response.getJSONObject(i);
 
-                // Read the response
-                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    response.append(line);
+                        String firstName = jsonObject.getString("first_name");
+                        String lastName = jsonObject.getString("last_name");
+                        String email = jsonObject.getString("email");
+
+                        User user = new User(firstName, lastName, email);
+                        userList.add(user);
+                    }catch (JSONException e){
+                        e.printStackTrace();
+                    }
+
+                    UserAdapter adapter = new UserAdapter(MainActivity.this, userList);
+                    userRecyclerView.setAdapter(adapter);
                 }
-                reader.close();
-
-                // Close the connection
-                connection.disconnect();
-
-                return response.toString();
-            } catch (Exception e) {
-                e.printStackTrace();
-                return null;
             }
-        }
-
-        @Override
-        protected void onPostExecute(String response) {
-            if (response != null) {
-                // Parse the JSON response into a list of User objects using Gson
-                Gson gson = new Gson();
-                User[] usersArray = gson.fromJson(response, User[].class);
-                List<User> userList = new ArrayList<>(Arrays.asList(usersArray));
-
-                // Create and set the adapter for the RecyclerView
-                userAdapter = new UserAdapter(userList);
-                userRecyclerView.setAdapter(userAdapter);
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(MainActivity.this, error.getMessage(), Toast.LENGTH_SHORT).show();
             }
-        }
+        });
+
+        requestQueue.add(jsonArrayRequest);
     }
 }
